@@ -4,6 +4,12 @@
 
 本项目基于 [`dedoussis/icloud-hide-my-email-browser-extension`](https://github.com/dedoussis/icloud-hide-my-email-browser-extension) 修改，遵循 MIT License。
 
+## 普通用户下载
+
+不想自己构建的话，可以直接到 [Releases](https://github.com/yusheng-99/icloud-hide-my-email-cn-helper/releases/latest) 下载 `icloud-hide-my-email-cn-helper-v*-chrome.zip`。
+
+下载后解压，在 Chrome 扩展管理页开启“开发者模式”，选择解压后的目录即可使用。
+
 ## 功能特性
 
 - **中文界面**：弹窗、管理页、提示信息均已中文化。
