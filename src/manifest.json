@@ -1,19 +1,14 @@
 {
-  "name": "iCloud Hide My Email",
-  "description": "Use iCloud's Hide My Email service on Chrome.",
+  "name": "iCloud隐藏邮箱助手",
+  "description": "在浏览器中使用 iCloud 隐藏邮箱，支持中文界面和批量生成。",
   "manifest_version": 3,
-  "background": { "service_worker": "background.bundle.js" },
+  "background": {
+    "service_worker": "background.bundle.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon-32.png"
   },
-  "content_scripts": [
-    {
-      "matches": ["http://*/*", "https://*/*", "<all_urls>"],
-      "js": ["contentScript.bundle.js"],
-      "css": ["contentScript.css"]
-    }
-  ],
   "options_page": "options.html",
   "declarative_net_request": {
     "rule_resources": [
@@ -28,11 +23,16 @@
     "declarativeNetRequest",
     "storage",
     "tabs",
+    "alarms",
     "contextMenus",
     "webRequest",
     "notifications"
   ],
-  "host_permissions": ["https://*.icloud.com/*", "https://*.icloud.com.cn/*"],
+  "host_permissions": [
+    "https://*.icloud.com/*",
+    "https://*.icloud.com.cn/*",
+    "http://127.0.0.1:37651/*"
+  ],
   "icons": {
     "16": "icon-16.png",
     "32": "icon-32.png",

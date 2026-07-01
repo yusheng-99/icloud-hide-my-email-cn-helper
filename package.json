@@ -1,17 +1,17 @@
 {
-  "name": "icloud-hide-my-email-browser-extension",
+  "name": "icloud-hide-my-email-cn-helper",
   "version": "1.2.11",
-  "description": "Cross-browser extension enabling the usage of iCloud's Hide My Email service.",
+  "description": "iCloud 隐藏邮箱助手中文增强版，支持中国区、批量获取和自动邮箱池。",
   "license": "MIT",
-  "author": "dedoussis",
+  "author": "Ethan, based on work by Dimitrios Dedoussis",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dedoussis/icloud-hide-my-email-browser-extension.git"
+    "url": "https://github.com/yusheng-99/icloud-hide-my-email-cn-helper.git"
   },
   "scripts": {
-    "prebuild": "rm -rf build",
+    "prebuild": "node -e \"require('fs').rmSync('build',{recursive:true,force:true})\"",
     "build": "node utils/build.js",
-    "prebuild:firefox": "rm -rf build",
+    "prebuild:firefox": "node -e \"require('fs').rmSync('build',{recursive:true,force:true})\"",
     "build:firefox": "FIREFOX=true node utils/build.js",
     "start": "node utils/webserver.js",
     "start:firefox": "FIREFOX=true node utils/webserver.js",
@@ -68,5 +68,6 @@
     "webpack": "^5.68.0",
     "webpack-cli": "^4.9.2",
     "webpack-dev-server": "^5.2.2"
-  }
+  },
+  "private": false
 }

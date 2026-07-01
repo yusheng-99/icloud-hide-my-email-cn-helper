@@ -1,15 +1,18 @@
-import React, { ButtonHTMLAttributes, DetailedHTMLProps } from 'react';
+﻿import React, { ButtonHTMLAttributes, DetailedHTMLProps } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 export const Spinner = () => {
   return (
-    <div className="text-center">
-      <FontAwesomeIcon
-        icon={faSpinner}
-        spin={true}
-        className="text-3xl text-sky-400"
-      />
+    <div className="flex min-h-[120px] items-center justify-center text-center">
+      <div className="rounded-2xl border border-sky-100 bg-white/80 px-5 py-4 shadow-sm">
+        <FontAwesomeIcon
+          icon={faSpinner}
+          spin={true}
+          className="text-3xl text-sky-500"
+        />
+        <p className="mt-2 text-sm font-medium text-slate-500">加载中...</p>
+      </div>
     </div>
   );
 };
@@ -22,15 +25,15 @@ export const LoadingButton = (
     HTMLButtonElement
   >
 ) => {
-  const { loading, disabled, ...btnHtmlAttrs } = props;
+  const { loading, disabled, className, ...btnHtmlAttrs } = props;
 
-  const defaultClassName =
-    'w-full justify-center text-white bg-sky-400 hover:bg-sky-500 focus:ring-4 focus:outline-hidden focus:ring-blue-300 font-medium rounded-lg px-5 py-2.5 text-center mr-2 inline-flex items-center';
+  const enabledClassName =
+    'inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 to-cyan-400 px-5 py-2.5 text-center text-sm font-semibold text-white shadow-sm shadow-sky-200 transition hover:-translate-y-0.5 hover:from-sky-600 hover:to-cyan-500 hover:shadow-md focus:outline-hidden focus:ring-4 focus:ring-sky-200';
 
-  const diabledClassName =
-    'w-full justify-center text-white bg-gray-400 font-medium rounded-lg px-5 py-2.5 text-center mr-2 inline-flex items-center';
+  const disabledClassName =
+    'inline-flex w-full items-center justify-center rounded-xl bg-slate-300 px-5 py-2.5 text-center text-sm font-semibold text-white shadow-none';
 
-  const btnClassName = disabled ? diabledClassName : defaultClassName;
+  const btnClassName = `${disabled ? disabledClassName : enabledClassName} ${className || ''}`;
 
   return (
     <button
@@ -40,7 +43,7 @@ export const LoadingButton = (
       {...btnHtmlAttrs}
     >
       {loading && !disabled && (
-        <FontAwesomeIcon icon={faSpinner} spin={true} className="mr-1" />
+        <FontAwesomeIcon icon={faSpinner} spin={true} className="mr-2" />
       )}
       {props.children}
     </button>
@@ -50,7 +53,7 @@ export const LoadingButton = (
 export const ErrorMessage = (props: { children?: React.ReactNode }) => {
   return (
     <div
-      className="p-2 text-sm text-red-700 bg-red-100 rounded-lg"
+      className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm leading-5 text-rose-700"
       role="alert"
     >
       {props.children}
@@ -67,18 +70,31 @@ export const TitledComponent = (props: {
     props.children instanceof Array ? props.children : [props.children];
 
   return (
-    <div className="text-base space-y-3">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900">{props.title}</h1>
-        <h2 className="font-medium text-gray-400">{props.subtitle}</h2>
+    <div className="space-y-4 text-base text-slate-900">
+      <div className="relative overflow-hidden rounded-3xl border border-sky-100 bg-gradient-to-br from-white via-sky-50 to-cyan-50 px-5 py-5 text-center shadow-sm">
+        <div className="absolute -right-8 -top-8 size-24 rounded-full bg-sky-200/40 blur-2xl" />
+        <div className="absolute -bottom-10 -left-10 size-28 rounded-full bg-cyan-200/40 blur-2xl" />
+        <div className="relative">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-sky-500">
+            iCloud HME
+          </p>
+          <h1 className="text-3xl font-black tracking-tight text-slate-950">
+            {props.title}
+          </h1>
+          <h2 className="mt-1 text-sm font-medium text-slate-500">
+            {props.subtitle}
+          </h2>
+        </div>
       </div>
       {children?.map((child, key) => {
         return (
           child && (
-            <React.Fragment key={key}>
-              <hr />
+            <section
+              key={key}
+              className="rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-sm shadow-slate-200/60"
+            >
               {child}
-            </React.Fragment>
+            </section>
           )
         );
       })}
@@ -97,7 +113,7 @@ export const Link = (
   const { className, children, ...restProps } = props;
   return (
     <a
-      className={`text-sky-400 hover:text-sky-500 ${className}`}
+      className={`font-semibold text-sky-600 underline decoration-sky-200 underline-offset-4 transition hover:text-sky-700 ${className}`}
       target="_blank"
       rel="noreferrer"
       {...restProps}

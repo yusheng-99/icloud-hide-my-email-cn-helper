@@ -1,8 +1,5 @@
-@reference "tailwindcss";
+﻿@reference "tailwindcss";
 
-/*
-  TailwindCSS v3 compatibility: https://tailwindcss.com/docs/upgrade-guide#buttons-use-the-default-cursor 
-*/
 @layer base {
   button:not(:disabled),
   [role='button']:not(:disabled) {
@@ -11,15 +8,15 @@
 }
 
 .d1691f0f-b8f0-495e-9ffb-fe4e6f84b518-button {
-  @apply bg-sky-400 text-white w-full rounded p-2 my-1 font-sans font-medium;
+  @apply my-1 w-full rounded-xl bg-gradient-to-r from-sky-500 to-cyan-400 p-2.5 font-sans text-sm font-semibold text-white shadow-sm shadow-sky-200;
 }
 
 .d1691f0f-b8f0-495e-9ffb-fe4e6f84b518-hover-button {
-  @apply hover:bg-sky-500;
+  @apply transition hover:-translate-y-0.5 hover:from-sky-600 hover:to-cyan-500;
 }
 
 .d1691f0f-b8f0-495e-9ffb-fe4e6f84b518-cursor-not-allowed {
-  @apply cursor-not-allowed;
+  @apply cursor-not-allowed opacity-70;
 }
 
 .d1691f0f-b8f0-495e-9ffb-fe4e6f84b518-cursor-progress {

@@ -1,93 +1,79 @@
-# iCloud Hide My Email Browser Extension
+# iCloud 隐藏邮箱助手（中文增强版）
 
-[![Tests Status](https://github.com/dedoussis/icloud-hide-my-email-browser-extension/workflows/tests/badge.svg)](https://github.com/dedoussis/icloud-hide-my-email-browser-extension/actions/workflows/tests.yml)
+这是 [`dedoussis/icloud-hide-my-email-browser-extension`](https://github.com/dedoussis/icloud-hide-my-email-browser-extension) 的修改版，基于 MIT License 发布。
 
-[Hide My Email](https://support.apple.com/en-us/HT210425) is a premium privacy service of iCloud. Safari offers a native integration with Hide My Email, whereby users are prompted to generate a Hide My Email address upon registration to any website. This extension aims to bring a similar UX into a wider variety of browsers. In particular, it has been explicitly tested to work on:
+本项目保留原项目的 iCloud Hide My Email 管理能力，并针对个人本地使用做了中文化、iCloud 中国区适配、批量获取和自动获取邮箱池等增强。
 
-- [Chrome](https://chrome.google.com/webstore/detail/icloud-hide-my-email/omiaekblhgfopjkjnenhahfgcgnbohlk)
-- [Firefox](https://addons.mozilla.org/en-US/firefox/addon/icloud-hide-my-email/)
-- [Brave](https://chrome.google.com/webstore/detail/icloud-hide-my-email/omiaekblhgfopjkjnenhahfgcgnbohlk)
-- Microsoft Edge
+## 功能
 
-Note that the extension _should_ work on any browser that implements the [extension API](https://developer.chrome.com/docs/extensions/reference/) supported by Chromium-based browsers.
+- 中文界面。
+- 默认使用 iCloud 中国区接口。
+- 右上角弹窗只负责检查 iCloud 连接状态，并跳转到管理页面。
+- 管理页面支持批量获取隐藏邮箱。
+- 自动获取邮箱池：可开始、停止、立即获取 5 个、复制、下载 TXT、清空。
+- 可选写入桌面 TXT：默认开启，可在页面里关闭。
+- 隐藏邮箱管理：搜索、复制、停用、启用、删除已停用邮箱。
+- 转发地址切换。
 
-_Disclaimer: This extension is not endorsed by, directly affiliated with, maintained, authorized, or sponsored by Apple._
+## 安装 / 本地使用
 
-<p align="center">
-<img src="./src/assets/img/demo-popup.gif" alt="Extension popup demo" width="400" height="auto"/>
-</p>
-
-<p align="center">
-<img src="./src/assets/img/demo-content.gif" alt="Extension content demo" width="600" height="auto"/>
-</p>
-
-## Features
-
-- Simple pop-up UI for generating and reserving new Hide My Email addresses
-- Ability to manage existing Hide My Email addresses (including deactivation, reactivation, and deletion)
-- Autofilling on any HTML input element that is relevant to email
-- Quick configuration of Hide My Email settings, such as the Forward-To address, through the Options page of the extension
-
-## Options
-
-### Address autofilling
-
-The extension can be configured to
-
-1. show an autofill button on input field focus
-2. show a context menu item when right-clicking on input fields
-
-<p align="center">
-<img src="./src/assets/img/readme-button-autofilling.png" alt="Autofilling button on input field focus" width="400" height="auto"/>
-</p>
-
-<p align="center">
-<img src="./src/assets/img/readme-context-menu-autofilling.png" alt="Context menu item when right-clicking on input fields" width="400" height="auto"/>
-</p>
-
-You can enable/disable any of the autofilling mechanisms through the Options page of the extension.
-
-## Develop
-
-This extension is entirely written in TypeScript. The UI pages of the extension (e.g. Pop-Up and Options) are implemented as React apps and styled with TailwindCSS.
-
-### Dev environment
-
-Development was carried out in an environment that matches the following Docker image:
-
-```Dockerfile
-FROM node:25.1.0-alpine3.22
-
-RUN apk add --update --no-cache g++ make python3
-
-ADD . /opt/extension
-
-WORKDIR /opt/extension
-
-ENTRYPOINT ["sh"]
+```powershell
+npm ci
+npm run build
 ```
 
-### Development workflow
+然后在 Chrome 打开：
 
-The table below outlines the sequence of steps that need to be followed in order to ship a change in the extension. The execution of some of these steps varies per browser engine.
+```text
+chrome://extensions
+```
 
-Note: the following console commands are to be executed from the root directory of this repo
+开启“开发者模式”，选择“加载已解压的扩展程序”，加载：
 
-<!-- prettier-ignore-start -->
-| # | Description | Chromium | Firefox |
-| - | - | - | - |
-| 0 | Configure node environment (not required when building with Docker) | `nvm use` | `nvm use` |
-| 1 | Install deps | `npm ci` | `npm ci && npm i -g web-ext` |
-| 2 | Spin up the DevServer. The server generates the `build` dir. | `npm run start` | `npm run start:firefox` |
-| 3 | Load the unpacked extension on the browser |  The `build` dir can be loaded as an unpacked extension through the browser's UI. See the relevant [Google Chrome guide](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked). | `web-ext -s build run` |
-| 4 | Develop against the local browser instance on which the `build` dir is loaded | N/A | N/A |
-| 5 | Build productionised artefact | `npm run build` | `npm run build:firefox` |
-| 6 | Compress productionised artefact | `zip build.zip ./build/*` | `web-ext -s build build` |
-| 7 | Publish | [Chrome webstore dev console](https://chrome.google.com/webstore/devconsole/) | [Mozilla Add-on developer hub](https://addons.mozilla.org/en-US/developers/addon/icloud-hide-my-email/versions/submit/) |
-<!-- prettier-ignore-end -->
+```text
+build
+```
 
-### TODOs
+## 桌面 TXT 写入
 
-- [ ] Ability to modify the label and note of existing HME addresses
-- [ ] CI and maybe CD
-- [ ] Dependabot
+自动获取邮箱池可以把获取到的邮箱追加写入桌面 TXT。
+
+该能力依赖本地写入助手监听：
+
+```text
+http://127.0.0.1:37651/append
+```
+
+如果本地助手未启动，扩展仍会把邮箱保存到扩展内部。管理页面里可以关闭“写入桌面 TXT”开关。
+
+本地写入接口默认使用公开占位 token：
+
+```text
+local-dev-token
+```
+
+如果你需要更严格的本地校验，请自行修改扩展和本地写入助手两边的 token。
+
+## 构建产物
+
+`build/` 为构建产物，已在 `.gitignore` 中忽略。建议源码提交到 GitHub，发布压缩包时再从 `build/` 打包。
+
+## 上游项目
+
+原项目：
+
+- Repository: https://github.com/dedoussis/icloud-hide-my-email-browser-extension
+- License: MIT License
+- Copyright: Copyright (c) 2022-2024 Dimitrios Dedoussis
+
+本项目是修改版，不代表原作者发布或维护。
+
+## 免责声明
+
+This project is not affiliated with, endorsed by, maintained, authorized, or sponsored by Apple Inc.
+
+iCloud, Apple, and Hide My Email are trademarks of Apple Inc.
+
+## License
+
+MIT License. See [`LICENSE`](./LICENSE) and [`NOTICE.md`](./NOTICE.md).

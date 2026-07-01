@@ -147,7 +147,7 @@ export class PremiumMailSettings {
     label: string,
     note:
       | string
-      | undefined = 'Generated through the iCloud Hide My Email browser extension'
+      | undefined = '通过 iCloud 隐藏邮箱助手创建'
   ): Promise<HmeEmail> {
     const response = (await this.client.request(
       'POST',
@@ -174,7 +174,7 @@ export class PremiumMailSettings {
     )) as PremiumMailSettingsResponse;
 
     if (!response.success) {
-      throw new UpdateHmeMetadataException('Failed to update HME metadata');
+      throw new UpdateHmeMetadataException('更新隐藏邮箱备注失败');
     }
   }
 
@@ -186,7 +186,7 @@ export class PremiumMailSettings {
     )) as PremiumMailSettingsResponse;
 
     if (!response.success) {
-      throw new DeactivateHmeException('Failed to deactivate HME');
+      throw new DeactivateHmeException('停用隐藏邮箱失败');
     }
   }
 
@@ -198,7 +198,7 @@ export class PremiumMailSettings {
     )) as PremiumMailSettingsResponse;
 
     if (!response.success) {
-      throw new ReactivateHmeException('Failed to reactivate HME');
+      throw new ReactivateHmeException('重新启用隐藏邮箱失败');
     }
   }
 
@@ -210,7 +210,7 @@ export class PremiumMailSettings {
     )) as PremiumMailSettingsResponse;
 
     if (!response.success) {
-      throw new DeleteHmeException('Failed to delete HME');
+      throw new DeleteHmeException('删除隐藏邮箱失败');
     }
   }
 
@@ -223,7 +223,7 @@ export class PremiumMailSettings {
 
     if (!response.success) {
       throw new UpdateFwdToHmeException(
-        'Failed to update the Forward To email.'
+        '更新转发邮箱失败。'
       );
     }
   }

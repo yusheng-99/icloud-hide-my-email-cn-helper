@@ -128,7 +128,9 @@ const options = {
 
             return Buffer.from(
               JSON.stringify({
-                version: process.env.npm_package_version,
+                version:
+                  process.env.npm_package_version ||
+                  require('./package.json').version,
                 ...(!FIREFOX
                   ? manifest
                   : applyFirefoxManifestTransformations(manifest)),

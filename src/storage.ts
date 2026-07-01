@@ -11,9 +11,30 @@ export type Options = {
   autofill: Autofill;
 };
 
+export type AutoHmeEntry = {
+  email: string;
+  createdAt: string;
+  batchId: string;
+};
+
+export type AutoHmeSettings = {
+  enabled: boolean;
+  running: boolean;
+  nextRunAt?: string;
+  lastRunAt?: string;
+  lastSuccessAt?: string;
+  lastStoppedAt?: string;
+  lastError?: string;
+  lastCount?: number;
+  desktopAppend?: string;
+  desktopAppendEnabled: boolean;
+};
+
 export type Store = {
   popupState: PopupState;
   iCloudHmeOptions: Options; // TODO: rename key to options
+  autoHmeEmails: AutoHmeEntry[];
+  autoHmeSettings: AutoHmeSettings;
   clientState?: {
     setupUrl: ConstructorParameters<typeof ICloudClient>[0];
     webservices: ConstructorParameters<typeof ICloudClient>[1];
@@ -24,9 +45,15 @@ export const DEFAULT_STORE = {
   popupState: PopupState.SignedOut,
   iCloudHmeOptions: {
     autofill: {
-      button: true,
-      contextMenu: true,
+      button: false,
+      contextMenu: false,
     },
+  },
+  autoHmeEmails: [],
+  autoHmeSettings: {
+    enabled: false,
+    running: false,
+    desktopAppendEnabled: true,
   },
   clientState: undefined,
 };

@@ -1,13 +1,5 @@
 @import 'tailwindcss';
 
-/*
-  The default border color has changed to `currentcolor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
 @layer base {
   *,
   ::after,
@@ -16,12 +8,7 @@
   ::file-selector-button {
     border-color: var(--color-gray-200, currentcolor);
   }
-}
 
-/*
-  TailwindCSS v3 compatibility: https://tailwindcss.com/docs/upgrade-guide#buttons-use-the-default-cursor 
-*/
-@layer base {
   button:not(:disabled),
   [role='button']:not(:disabled) {
     cursor: pointer;
@@ -30,5 +17,41 @@
 
 html,
 body {
-  width: 420px;
+  width: 360px;
+  min-height: 260px;
+  margin: 0;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(14, 165, 233, 0.2), transparent 32%),
+    radial-gradient(circle at 92% 20%, rgba(34, 211, 238, 0.18), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, #eef7ff 100%);
+  color: #0f172a;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'Microsoft YaHei', 'PingFang SC', sans-serif;
+}
+
+#app-container {
+  min-height: 100vh;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #bae6fd transparent;
+}
+
+input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  height: 1em;
+  width: 1em;
+  border-radius: 50em;
+  background: url('data:image/svg+xml;utf8, <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="%2394a3b8" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm121.6 313.1c4.7 4.7 4.7 12.3 0 17L338 377.6c-4.7 4.7-12.3 4.7-17 0L256 312l-65.1 65.6c-4.7 4.7-12.3 4.7-17 0L134.4 338c-4.7-4.7-4.7-12.3 0-17l65.6-65-65.6-65.1c-4.7-4.7-4.7-12.3 0-17l39.6-39.6c4.7-4.7 12.3-4.7 17 0l65 65.7 65.1-65.6c4.7-4.7 12.3-4.7 17 0l39.6 39.6c4.7 4.7 4.7 12.3 0 17L312 256l65.6 65.1z"/></svg>')
+    no-repeat 50% 50%;
+  background-size: contain;
+  opacity: 0;
+  pointer-events: none;
+  padding-left: 5%;
+}
+input[type='search']:focus::-webkit-search-cancel-button {
+  opacity: 0.45;
+  pointer-events: all;
 }

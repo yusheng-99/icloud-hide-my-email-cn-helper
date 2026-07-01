@@ -1,9 +1,8 @@
-import React, { InputHTMLAttributes, useState } from 'react';
+import React from 'react';
 import { TitledComponent, Link } from '../../commonComponents';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faInfoCircle,
-  faCheckCircle,
   faWarning,
 } from '@fortawesome/free-solid-svg-icons';
 import { isFirefox } from '../../browserUtils';
@@ -16,21 +15,21 @@ const Notice = (props: {
   const { title, children, isAlert = false } = props;
 
   const colourPalette = isAlert
-    ? 'bg-yellow-50 border-yellow-400 text-yellow-600'
-    : 'text-gray-600 bg-gray-50';
+    ? 'border-amber-200 bg-amber-50 text-amber-800'
+    : 'border-sky-100 bg-sky-50/70 text-slate-600';
 
   return (
     <div
-      className={`flex p-3 text-sm border rounded-lg ${colourPalette}`}
-      role={isAlert ? 'alert' : 'info'}
+      className={`flex rounded-2xl border p-3 text-sm leading-6 ${colourPalette}`}
+      role={isAlert ? 'alert' : 'note'}
     >
       <FontAwesomeIcon
         icon={isAlert ? faWarning : faInfoCircle}
         className="mr-2 mt-1"
       />
-      <span className="sr-only">Info</span>
+      <span className="sr-only">提示</span>
       <div className="space-y-1">
-        <p className="font-semibold">{title}</p>
+        <p className="font-bold">{title}</p>
         {children}
       </div>
     </div>
@@ -39,212 +38,59 @@ const Notice = (props: {
 
 const SignInInstructions = () => {
   return (
-    <div className="space-y-4">
-      <div>
+    <div className="space-y-4 text-sm leading-6 text-slate-600">
+      <div className="space-y-3">
         <p>
-          To setup this extension, you need to sign-in to your iCloud account
-          from within the browser. Navigate to{' '}
-          <Link
-            href="https://icloud.com"
-            className="font-semibold"
-            aria-label="Go to iCloud.com"
-          >
-            icloud.com
+          使用这个扩展前，需要先在当前浏览器登录 iCloud。打开{' '}
+          <Link href="https://www.icloud.com.cn" aria-label="打开 iCloud 中国区">
+            icloud.com.cn
           </Link>{' '}
-          and complete the full sign-in process, including the{' '}
-          <span className="font-semibold">two-factor authentication</span> and{' '}
-          <span className="font-semibold">Trust This Browser</span> steps.
+          并完成双重认证和「信任此浏览器」。
         </p>
-        <div className="text-center">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 text-center">
           <img
             src="./icloud-sign-in.webp"
-            alt="Screenshots of the icloud.com sign-in flow"
+            alt="iCloud 登录流程截图"
+            className="w-full"
           />
         </div>
         <p>
-          Once you&apos;re signed-in to your account you&apos;re set to go. Open
-          the extension pop-up (🍏 icon) to generate a new{' '}
-          <span className="font-semibold">HideMyEmail</span> address! ✨
+          登录完成后，点击浏览器工具栏里的扩展图标，就可以生成、管理和批量保存隐藏邮箱。
         </p>
       </div>
       {isFirefox && (
-        <Notice title="Using Firefox Multi-Account Containers?" isAlert>
+        <Notice title="正在使用 Firefox 容器标签页？" isAlert>
           <p>
-            The extension won&apos;t work if you log-in to icloud.com from a tab
-            within a container. Instead, you need to log-in from a{' '}
-            <i>default</i> tab that is not part of any container. Once logged
-            in, the extension will work in any tab, whether it&apos;s part of a
-            container or not.
+            请在默认标签页登录 iCloud，不要在容器标签页内登录。登录成功后，扩展可在普通标签页中正常使用。
           </p>
         </Notice>
       )}
-      <Notice title="Already signed-in?">
-        <p>No further action needed. The extension is ready to use!</p>
+      <Notice title="已经登录了？">
+        <p>那就不用再操作，扩展会自动读取当前浏览器里的 iCloud 登录状态。</p>
       </Notice>
-      <Notice title='Do I have to ✅ the "Keep me signed in" box?'>
+      <Notice title="需要勾选“保持登录”吗？">
         <p>
-          This is not necessary. You may also choose to not trust this browser
-          in the relevant step of the sign-in flow. The extension will work
-          regardless. However, by opting to remain signed in, you ensure that
-          the extension will also remain signed in, which will save you from
-          frequently repeating the sign-in process. Hence, even though not
-          necessary,{' '}
-          <span className="font-semibold">
-            it&apos;s strongly recommended to tick the &quot;Keep me signed
-            in&quot; box
-          </span>
-          .
+          不是必须，但建议勾选。这样可以减少频繁重新登录 iCloud 的次数，扩展使用起来会更稳定。
         </p>
       </Notice>
-    </div>
-  );
-};
-
-const AutofillableDemoInput = (props: {
-  inputAttributes: InputHTMLAttributes<HTMLInputElement>;
-  label: string;
-}) => {
-  const [autofillableInputValue, setAutoFillableInputValue] =
-    useState<string>();
-
-  return (
-    <div className="space-y-2">
-      <label
-        htmlFor={props.inputAttributes.id}
-        className="block font-semibold text-gray-600"
-      >
-        {props.label}{' '}
-        {autofillableInputValue?.endsWith('@icloud.com') && (
-          <FontAwesomeIcon
-            icon={faCheckCircle}
-            className="ml-1 mt-1 text-green-500"
-          />
-        )}
-      </label>
-      <input
-        className="bg-[Canvas] block w-full rounded-md relative px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-hidden focus:ring-sky-400 focus:border-sky-400 focus:z-10 sm:text-sm"
-        defaultValue={autofillableInputValue}
-        onInput={(e) =>
-          setAutoFillableInputValue((e.target as HTMLInputElement).value)
-        }
-        {...props.inputAttributes}
-      />
-    </div>
-  );
-};
-
-const UsageInstructions = () => {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <p>
-          In the extension pop-up (🍏 icon) you can find a
-          MacOS-System-Settings-like UI that enables you to generate new
-          HideMyEmail addresses and manage existing ones.
-        </p>
-        <p>
-          <span className="font-semibold">
-            In most cases though, you don&apos;t need to interact with the
-            pop-up UI
-          </span>
-          . The extension will automatically detect email input fields and
-          prompt you to autofill new addresses! Alternatively, you can
-          right-click on any text input field and select the menu item of the
-          extension.
-        </p>
-      </div>
-      <div className="space-y-2">
-        <p>Try it yourself:</p>
-        <div className="w-full max-w-md p-3 border rounded-lg bg-gray-50">
-          <form className="space-y-2">
-            <AutofillableDemoInput
-              label="Autofill via button"
-              inputAttributes={{
-                id: 'autofill-by-button',
-                name: 'email',
-                type: 'email',
-                placeholder: 'Click (focus) on this field',
-              }}
-            />
-            <AutofillableDemoInput
-              label="Autofill via right-click context menu"
-              inputAttributes={{
-                id: 'autofill-by-right-click',
-                type: 'text',
-                placeholder:
-                  'Right click on this field and select the menu item of the extension',
-              }}
-            />
-          </form>
-        </div>
-      </div>
-      <div>
-        If you find the autofill-via-button feature intrusive, you can disable
-        it in the <Link href="./options.html">extension Options</Link>.
-      </div>
-      <div>
-        Don&apos;t forget to delete the HideMyEmail addresses you created above
-        for the purposes of trying this out:
-        <ol className="list-decimal list-inside">
-          <li>Open the extension pop-up (🍏 icon)</li>
-          <li>Navigate to the &quot;Manage emails&quot; view</li>
-          <li>Select, deactivate, and delete the relevant addresses</li>
-        </ol>
-      </div>
     </div>
   );
 };
 
 const TechnicalOverview = () => {
   return (
-    <div className="space-y-2">
+    <div className="space-y-3 text-sm leading-6 text-slate-600">
       <p>
-        How does it work? At a high level, the extension interacts with the
-        iCloud APIs by simulating the client behavior (i.e. the network
-        requests) of the{' '}
-        <Link href="https://icloud.com" aria-label="Go to iCloud.com">
-          icloud.com
-        </Link>{' '}
-        web app. For authentication, it relies on the icloud.com cookies that
-        have been stored in your browser following the sign-in flow outlined at
-        the top of this guide.
+        扩展通过模拟 iCloud 网页端的请求来调用隐藏邮箱接口，认证依赖你当前浏览器里已经登录的 iCloud Cookie。
       </p>
       <p>
-        How does it access the icloud.com cookies? The extension has{' '}
-        <Link href="https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/host_permissions">
-          host permissions
-        </Link>{' '}
-        on several paths of the icloud.com host. When an extension has host
-        permissions on a host, all extension ➡️ host-server requests are treated
-        as{' '}
-        <Link href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy">
-          same-origin
-        </Link>{' '}
-        by the browser. By default, browsers include{' '}
-        <Link href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#requests_with_credentials">
-          credentials
-        </Link>{' '}
-        (e.g. cookies) in all same-origin requests.
+        因为扩展声明了 iCloud 域名权限，所以对 iCloud 的请求会被浏览器按同源请求处理，并自动带上登录凭据。
       </p>
       <p>
-        <span className="font-semibold">
-          At no point does the extension have access to the Apple ID email and
-          password that you feed into the icloud.com sign-in form
-        </span>
-        . The source of the extension is{' '}
-        <Link
-          href="https://github.com/dedoussis/icloud-hide-my-email-browser-extension"
-          aria-label="source code"
-        >
-          publicly available in GitHub
-        </Link>
-        .
+        扩展不会读取你在 iCloud 登录页输入的 Apple ID 密码。本地改版仅调整了中国区入口、中文 UI、批量生成和自动邮箱池。
       </p>
       <p>
-        If you&apos;re skeptical about using this extension, and looking for an
-        alternative way of interacting with the HideMyEmail service outside of
-        Safari, you can still use icloud.com on any browser. This extension only
-        offers a more ergonomic browser experience compared to icloud.com.
+        如果你想手动管理，也可以直接使用 iCloud 网页版；这个扩展只是把常用操作做得更快。
       </p>
     </div>
   );
@@ -252,18 +98,14 @@ const TechnicalOverview = () => {
 
 const Userguide = () => {
   return (
-    <div className="w-9/12 m-auto mt-3 mb-24">
-      <TitledComponent title="Hide My Email" subtitle="Quickstart guide">
+    <div className="mx-auto mb-24 mt-6 max-w-5xl px-4">
+      <TitledComponent title="隐藏邮箱助手" subtitle="快速使用指南">
         <div>
-          <h3 className="font-bold text-lg mb-3">Sign-in to iCloud</h3>
+          <h3 className="mb-3 text-lg font-black text-slate-900">登录 iCloud</h3>
           <SignInInstructions />
         </div>
         <div>
-          <h3 className="font-bold text-lg mb-3">How to use?</h3>
-          <UsageInstructions />
-        </div>
-        <div>
-          <h3 className="font-bold text-lg mb-3">Advanced</h3>
+          <h3 className="mb-3 text-lg font-black text-slate-900">工作原理</h3>
           <TechnicalOverview />
         </div>
       </TitledComponent>

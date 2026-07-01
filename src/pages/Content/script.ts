@@ -14,7 +14,7 @@ import { getBrowserStorageValue } from '../../storage';
 const EMAIL_INPUT_QUERY_STRING =
   'input[type="email"], input[name="email"], input[id="email"]';
 
-const LOADING_COPY = 'Hide My Email — Loading...';
+const LOADING_COPY = '隐藏邮箱助手 — 生成中...';
 
 // A unique CSS class prefix is used to guarantee that the style injected
 // by the extension does not interfere with the existing style of
@@ -138,10 +138,7 @@ export default async function main(): Promise<void> {
     inputElement: HTMLInputElement
   ): AutofillableInputElement => ({
     inputElement,
-    buttonSupport:
-      options?.autofill.button === false
-        ? undefined
-        : makeButtonSupport(inputElement),
+    buttonSupport: undefined,
   });
 
   const autofillableInputElements = Array.from(emailInputElements).map(

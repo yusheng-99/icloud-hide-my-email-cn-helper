@@ -31,12 +31,17 @@ import { isFirefox } from '../../browserUtils';
 const constructClient = async (): Promise<ICloudClient> => {
   const clientState = await getBrowserStorageValue('clientState');
 
-  if (clientState === undefined) {
-    console.debug('constructClient: Using default setupUrl');
-    return new ICloudClient(DEFAULT_SETUP_URL);
+  if (clientState === undefined || clientState.setupUrl !== CN_SETUP_URL) {
+    if (clientState?.setupUrl !== undefined) {
+      console.debug('constructClient: clearing non-China iCloud session');
+      performDeauthSideEffects();
+    } else {
+      console.debug('constructClient: Using China setupUrl');
+    }
+    return new ICloudClient(CN_SETUP_URL);
   }
 
-  return new ICloudClient(clientState.setupUrl, clientState.webservices);
+  return new ICloudClient(CN_SETUP_URL, clientState.webservices);
 };
 
 const performDeauthSideEffects = () => {
@@ -66,6 +71,7 @@ const performAuthSideEffects = (
     .update(CONTEXT_MENU_ITEM_ID, {
       title: SIGNED_IN_CTA_COPY,
       enabled: true,
+      visible: false,
     })
     .catch(console.debug);
 
@@ -81,12 +87,228 @@ const performAuthSideEffects = (
   }
 };
 
+// ===== Auto HME collector =====
+
+const AUTO_HME_ALARM_NAME = 'auto-hme-collector';
+const AUTO_HME_PERIOD_MINUTES = 65;
+const AUTO_HME_BATCH_SIZE = 5;
+const AUTO_HME_APPEND_URL = 'http://127.0.0.1:37651/append';
+// Public local-only placeholder. Keep this matched with your local desktop append helper if you enable desktop TXT writing.
+const AUTO_HME_APPEND_TOKEN = 'local-dev-token';
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const appendAutoHmeEmails = async (emails: string[]) => {
+  if (emails.length === 0) {
+    return;
+  }
+  const response = await fetch(AUTO_HME_APPEND_URL, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-icloud-hme-auto-token': AUTO_HME_APPEND_TOKEN,
+    },
+    body: JSON.stringify({ emails }),
+  });
+  if (!response.ok) {
+    throw new Error(`Append server failed: HTTP ${response.status}`);
+  }
+};
+
+const saveAutoHmeEmailsInExtension = async (emails: string[]) => {
+  if (emails.length === 0) {
+    return;
+  }
+  const batchId = new Date().toISOString();
+  const existing = (await getBrowserStorageValue('autoHmeEmails')) || [];
+  await setBrowserStorageValue('autoHmeEmails', [
+    ...existing,
+    ...emails.map((email) => ({ email, createdAt: batchId, batchId })),
+  ]);
+};
+
+const getAutoHmeSettings = async () => ({
+  ...DEFAULT_STORE.autoHmeSettings,
+  ...((await getBrowserStorageValue('autoHmeSettings')) || {}),
+});
+
+const updateAutoHmeSettings = async (
+  patch: Partial<Store['autoHmeSettings']>
+) => {
+  const settings = { ...(await getAutoHmeSettings()), ...patch };
+  await setBrowserStorageValue('autoHmeSettings', settings);
+  return settings;
+};
+
+const scheduleAutoHmeAlarm = async (delayInMinutes = AUTO_HME_PERIOD_MINUTES) => {
+  const nextRunAt = new Date(
+    Date.now() + delayInMinutes * 60 * 1000
+  ).toISOString();
+  await browser.alarms.create(AUTO_HME_ALARM_NAME, {
+    delayInMinutes,
+    periodInMinutes: AUTO_HME_PERIOD_MINUTES,
+  });
+  return updateAutoHmeSettings({ enabled: true, nextRunAt, lastError: '' });
+};
+
+const stopAutoHmeAlarm = async () => {
+  await browser.alarms.clear(AUTO_HME_ALARM_NAME);
+  return updateAutoHmeSettings({
+    enabled: false,
+    running: false,
+    nextRunAt: undefined,
+    lastStoppedAt: new Date().toISOString(),
+  });
+};
+
+const setupAutoHmeAlarm = async () => {
+  const settings = await getAutoHmeSettings();
+  if (!settings.enabled) {
+    await browser.alarms.clear(AUTO_HME_ALARM_NAME);
+    await updateAutoHmeSettings({ running: false, nextRunAt: undefined });
+    return;
+  }
+
+  const existingAlarm = await browser.alarms.get(AUTO_HME_ALARM_NAME);
+  if (existingAlarm) {
+    const minNextRunAt = settings.lastSuccessAt
+      ? Date.parse(settings.lastSuccessAt) +
+        AUTO_HME_PERIOD_MINUTES * 60 * 1000
+      : 0;
+    if (
+      minNextRunAt > Date.now() &&
+      existingAlarm.scheduledTime < minNextRunAt - 60 * 1000
+    ) {
+      await browser.alarms.create(AUTO_HME_ALARM_NAME, {
+        delayInMinutes: Math.max(1, (minNextRunAt - Date.now()) / 60000),
+        periodInMinutes: AUTO_HME_PERIOD_MINUTES,
+      });
+      await updateAutoHmeSettings({
+        running: false,
+        nextRunAt: new Date(minNextRunAt).toISOString(),
+      });
+      return;
+    }
+    await updateAutoHmeSettings({
+      running: false,
+      nextRunAt: new Date(existingAlarm.scheduledTime).toISOString(),
+    });
+    return;
+  }
+
+  await scheduleAutoHmeAlarm(AUTO_HME_PERIOD_MINUTES);
+};
+
+const collectAutoHmeBatch = async (manual = false) => {
+  const settings = await getAutoHmeSettings();
+  if (!manual && !settings.enabled) {
+    return settings;
+  }
+  if (settings.running) {
+    return settings;
+  }
+
+  await updateAutoHmeSettings({
+    running: true,
+    lastRunAt: new Date().toISOString(),
+    lastError: '',
+  });
+
+  try {
+    const client = await constructClient();
+    const isAuthenticated = await client.isAuthenticated();
+    if (!isAuthenticated) {
+      performDeauthSideEffects();
+      throw new Error('iCloud 未登录，请先在扩展弹窗完成登录');
+    }
+
+    const pms = new PremiumMailSettings(client);
+    const emails: string[] = [];
+    const stamp = new Date().toISOString();
+
+    for (let i = 0; i < AUTO_HME_BATCH_SIZE; i += 1) {
+      const hme = await pms.generateHme();
+      await pms.reserveHme(
+        hme,
+        `auto-${stamp}`,
+        '本地扩展每 65 分钟自动生成'
+      );
+      emails.push(hme);
+      await sleep(1000);
+    }
+
+    await saveAutoHmeEmailsInExtension(emails);
+    let desktopAppend = settings.desktopAppendEnabled
+      ? '桌面写入助手未启动，仅保存到扩展内部'
+      : '桌面写入已关闭，仅保存到扩展内部';
+    if (settings.desktopAppendEnabled) {
+      try {
+        await appendAutoHmeEmails(emails);
+        desktopAppend = '同时已追加到桌面 TXT';
+      } catch (error) {
+        console.debug('Desktop append skipped', error);
+      }
+    }
+    const updated = await updateAutoHmeSettings({
+      running: false,
+      lastSuccessAt: new Date().toISOString(),
+      lastCount: emails.length,
+      desktopAppend,
+      nextRunAt: settings.enabled
+        ? new Date(Date.now() + AUTO_HME_PERIOD_MINUTES * 60 * 1000).toISOString()
+        : undefined,
+    });
+    browser.notifications
+      .create({
+        type: 'basic',
+        title: 'iCloud 隐藏邮箱助手',
+        message: `已自动获取 ${emails.length} 个隐藏邮箱，${desktopAppend}`,
+        iconUrl: 'icon-128.png',
+      })
+      .catch(console.debug);
+    return updated;
+  } catch (error) {
+    const message = error?.toString?.() || String(error);
+    const updated = await updateAutoHmeSettings({
+      running: false,
+      lastError: message,
+      nextRunAt: settings.enabled
+        ? new Date(Date.now() + AUTO_HME_PERIOD_MINUTES * 60 * 1000).toISOString()
+        : undefined,
+    });
+    browser.notifications
+      .create({
+        type: 'basic',
+        title: 'iCloud 隐藏邮箱助手自动获取失败',
+        message,
+        iconUrl: 'icon-128.png',
+      })
+      .catch(console.debug);
+    return updated;
+  }
+};
+
+browser.runtime.onInstalled.addListener(setupAutoHmeAlarm);
+browser.runtime.onStartup.addListener(setupAutoHmeAlarm);
+browser.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === AUTO_HME_ALARM_NAME) {
+    collectAutoHmeBatch().catch(console.debug);
+  }
+});
+setupAutoHmeAlarm();
+
 // ===== Message handling =====
 
 browser.runtime.onMessage.addListener(async (uncastedMessage: unknown) => {
   const message = uncastedMessage as Message<unknown>;
 
   switch (message.type) {
+    case MessageType.AutoHmeStart:
+      return await scheduleAutoHmeAlarm(1);
+    case MessageType.AutoHmeStop:
+      return await stopAutoHmeAlarm();
+    case MessageType.AutoHmeRunNow:
+      return await collectAutoHmeBatch(true);
     case MessageType.GenerateRequest:
       {
         const deauthCallback = async () => {
@@ -172,7 +394,7 @@ const setupContextMenu = async () => {
       title: LOADING_COPY,
       contexts: ['editable'],
       enabled: false,
-      visible: options.autofill.contextMenu,
+      visible: false,
     },
     async () => {
       const client = await constructClient();
@@ -188,7 +410,7 @@ const setupContextMenu = async () => {
 
 // At any given time, there should be 1 created context menu item. We want to prevent
 // the creation of multiple items that serve the same purpose (i.e. the context menu having multiple
-// "Generate and reserve Hide My Email address" rows). We also want to prevent the lack of creation of one.
+// iCloud 页面里“生成并保留隐藏邮箱地址”的记录也会经过这里；同时避免拦截导致无法创建。
 // Chromium persists the context menu state across browser restarts. Hence in Chromium, the context menu item is
 // created once in the lifecycle of the extenstion's installation.
 // On Firefox though, the context menu state is not persisted across browser restarts, meaning that the menu item
@@ -222,7 +444,7 @@ browser.storage.onChanged.addListener((changes, namespace) => {
 
   browser.contextMenus
     .update(CONTEXT_MENU_ITEM_ID, {
-      visible: newValue?.autofill.contextMenu,
+      visible: false,
     })
     .catch(console.debug);
 });
@@ -344,21 +566,10 @@ browser.runtime.onInstalled.addListener(
     }
   }
 );
-
-// Present the user with a getting-started guide.
-browser.runtime.onInstalled.addListener(
-  async (details: browser.Runtime.OnInstalledDetailsType) => {
-    const userguideUrl = browser.runtime.getURL('userguide.html');
-
-    if (details.reason === 'install') {
-      chrome.tabs.create({ url: userguideUrl }).then(console.debug);
-    }
-  }
-);
-
 // On Firefox the context menu state is not persisted across browser restarts, meaning that the menu item
 // will disappear once the user quits their browser. Hence on Firefox, we create the context
 // menu item each time the background script is loaded.
 if (isFirefox) {
   setupContextMenu();
 }
+
