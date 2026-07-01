@@ -76,7 +76,7 @@ export const TitledComponent = (props: {
         <div className="absolute -bottom-10 -left-10 size-28 rounded-full bg-cyan-200/40 blur-2xl" />
         <div className="relative">
           <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-sky-500">
-            iCloud HME
+            ICLOUD 隐藏邮箱
           </p>
           <h1 className="text-3xl font-black tracking-tight text-slate-950">
             {props.title}

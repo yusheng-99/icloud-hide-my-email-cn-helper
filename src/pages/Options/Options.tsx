@@ -51,7 +51,7 @@ const Sidebar = () => (
       <div className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-400 text-lg font-black text-white shadow-lg shadow-blue-500/30">
         iH
       </div>
-      <div className="text-sm font-black text-slate-900">iCloud HME</div>
+      <div className="text-sm font-black text-slate-900">iCloud 隐藏邮箱</div>
     </div>
 
     <nav className="space-y-2 text-sm font-bold text-slate-500">
