@@ -1,6 +1,6 @@
 {
   "name": "icloud-hide-my-email-cn-helper",
-  "version": "1.2.11",
+  "version": "1.2.12",
   "description": "iCloud 隐藏邮箱助手中文增强版，支持中国区、批量获取和自动邮箱池。",
   "license": "MIT",
   "author": "Ethan, based on work by Dimitrios Dedoussis",
