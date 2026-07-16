@@ -454,6 +454,8 @@ const EmailManager = (props: { client: ICloudClient; reloadKey: number }) => {
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [actingId, setActingId] = useState<string>();
+  const [checkedIds, setCheckedIds] = useState(() => new Set<string>());
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number }>();
 
   const load = async () => {
     setLoading(true);
@@ -462,6 +464,7 @@ const EmailManager = (props: { client: ICloudClient; reloadKey: number }) => {
       const result = await new PremiumMailSettings(props.client).listHme();
       const sorted = result.hmeEmails.sort((a, b) => b.createTimestamp - a.createTimestamp);
       setEmails(sorted);
+      setCheckedIds((prev) => new Set([...prev].filter((id) => sorted.some((item) => item.anonymousId === id))));
       setSelectedId((prev) => (prev && sorted.some((item) => item.anonymousId === prev) ? prev : sorted[0]?.anonymousId));
     } catch (e) {
       setError(e.toString());
@@ -488,6 +491,41 @@ const EmailManager = (props: { client: ICloudClient; reloadKey: number }) => {
   const selected = filtered.find((item) => item.anonymousId === selectedId) || filtered[0];
   const activeCount = emails.filter((item) => item.isActive).length;
   const allText = filtered.map((item) => item.hme).join('\n');
+  const oldest = emails.slice(-100);
+  const checked = emails.filter((item) => checkedIds.has(item.anonymousId));
+
+  const deactivateAndDelete = async () => {
+    if (!checked.length || !window.confirm(`确定停用并永久删除选中的 ${checked.length} 个邮箱吗？`)) return;
+
+    setBatchProgress({ done: 0, total: checked.length });
+    setError(undefined);
+    const pms = new PremiumMailSettings(props.client);
+    const deleted = new Set<string>();
+    const deactivated = new Set<string>();
+    const failed: string[] = [];
+
+    for (const email of checked) {
+      try {
+        if (email.isActive) {
+          await pms.deactivateHme(email.anonymousId);
+          deactivated.add(email.anonymousId);
+        }
+        await pms.deleteHme(email.anonymousId);
+        deleted.add(email.anonymousId);
+      } catch (e) {
+        failed.push(`${email.hme}: ${e}`);
+      }
+      setBatchProgress({ done: deleted.size + failed.length, total: checked.length });
+    }
+
+    setEmails((prev) => prev
+      .filter((item) => !deleted.has(item.anonymousId))
+      .map((item) => deactivated.has(item.anonymousId) ? { ...item, isActive: false } : item));
+    setCheckedIds((prev) => new Set([...prev].filter((id) => !deleted.has(id))));
+    setSelectedId((prev) => prev && deleted.has(prev) ? undefined : prev);
+    setBatchProgress(undefined);
+    setError(failed.length ? `已删除 ${deleted.size} 个，失败 ${failed.length} 个：${failed[0]}` : undefined);
+  };
 
   const toggleActive = async (target: HmeEmail) => {
     setActingId(target.anonymousId);
@@ -553,8 +591,12 @@ const EmailManager = (props: { client: ICloudClient; reloadKey: number }) => {
           <FontAwesomeIcon icon={faSearch} className="absolute left-4 top-3.5 text-sm text-slate-400" />
           <input className={`${inputClassName} pl-10`} placeholder="搜索邮箱、标签、转发地址或备注" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <button type="button" className={softButtonClassName} onClick={load} disabled={loading}><FontAwesomeIcon icon={faRefresh} spin={loading} className="mr-2" />刷新</button>
+        <button type="button" className={softButtonClassName} onClick={load} disabled={loading || Boolean(batchProgress)}><FontAwesomeIcon icon={faRefresh} spin={loading} className="mr-2" />刷新</button>
         <button type="button" className={softButtonClassName} disabled={!allText} onClick={() => navigator.clipboard.writeText(allText)}><FontAwesomeIcon icon={faClipboard} className="mr-2" />复制当前列表</button>
+        <button type="button" className={softButtonClassName} disabled={!oldest.length || Boolean(batchProgress)} onClick={() => setCheckedIds(new Set(oldest.map((item) => item.anonymousId)))}>选择最旧 {oldest.length} 个</button>
+        <button type="button" className="inline-flex h-10 items-center justify-center rounded-2xl bg-rose-500 px-4 text-sm font-black text-white transition hover:bg-rose-600 disabled:opacity-50" disabled={!checked.length || Boolean(batchProgress)} onClick={deactivateAndDelete}>
+          {batchProgress ? `处理中 ${batchProgress.done}/${batchProgress.total}` : `停用并删除（${checked.length}）`}
+        </button>
       </div>
 
       {error && <ErrorMessage>{error}</ErrorMessage>}
@@ -563,27 +605,41 @@ const EmailManager = (props: { client: ICloudClient; reloadKey: number }) => {
       ) : (
         <div className="grid min-h-[560px] overflow-hidden rounded-[28px] border border-white/80 bg-white/76 shadow-xl shadow-slate-200/55 backdrop-blur-xl lg:grid-cols-[minmax(360px,1fr)_420px]">
           <div className="border-r border-slate-200/70 bg-slate-50/55">
-            <div className="grid grid-cols-[minmax(0,1fr)_150px_90px] border-b border-slate-200/70 bg-white/70 px-4 py-3 text-xs font-black text-slate-400">
+            <div className="grid grid-cols-[44px_minmax(0,1fr)_150px_90px] border-b border-slate-200/70 bg-white/70 px-4 py-3 text-xs font-black text-slate-400">
+              <span>选择</span>
               <span>邮箱</span>
               <span>标签</span>
               <span>状态</span>
             </div>
             <div className="max-h-[560px] overflow-y-auto">
               {filtered.map((item) => (
-                <button
+                <div
                   key={item.anonymousId}
-                  type="button"
-                  className={`grid w-full grid-cols-[minmax(0,1fr)_150px_90px] items-center gap-2 border-b border-slate-100 px-4 py-3 text-left text-sm transition last:border-b-0 ${
+                  className={`grid w-full grid-cols-[44px_minmax(0,1fr)] items-center border-b border-slate-100 px-4 text-sm transition last:border-b-0 ${
                     selected?.anonymousId === item.anonymousId
                       ? 'bg-gradient-to-r from-blue-500 to-cyan-400 font-black text-white shadow-inner'
-                      : 'text-slate-700 hover:bg-white/80'
+                      : checkedIds.has(item.anonymousId) ? 'bg-blue-50 text-slate-700' : 'text-slate-700 hover:bg-white/80'
                   }`}
-                  onClick={() => setSelectedId(item.anonymousId)}
                 >
-                  <span className="truncate font-black" title={item.hme}>{item.hme}</span>
-                  <span className="truncate text-xs font-bold opacity-80" title={item.label || '-'}>{item.label || '-'}</span>
-                  <span className={`w-fit rounded-full px-2 py-1 text-xs font-black ${item.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>{item.isActive ? '启用' : '停用'}</span>
-                </button>
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-blue-600"
+                    checked={checkedIds.has(item.anonymousId)}
+                    disabled={Boolean(batchProgress)}
+                    aria-label={`选择 ${item.hme}`}
+                    onChange={() => setCheckedIds((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(item.anonymousId)) next.delete(item.anonymousId);
+                      else next.add(item.anonymousId);
+                      return next;
+                    })}
+                  />
+                  <button type="button" className="grid grid-cols-[minmax(0,1fr)_150px_90px] items-center gap-2 py-3 text-left" onClick={() => setSelectedId(item.anonymousId)}>
+                    <span className="truncate font-black" title={item.hme}>{item.hme}</span>
+                    <span className="truncate text-xs font-bold opacity-80" title={item.label || '-'}>{item.label || '-'}</span>
+                    <span className={`w-fit rounded-full px-2 py-1 text-xs font-black ${item.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>{item.isActive ? '启用' : '停用'}</span>
+                  </button>
+                </div>
               ))}
               {filtered.length === 0 && <div className="p-10 text-center text-sm font-bold text-slate-400">没有匹配结果</div>}
             </div>
@@ -622,9 +678,9 @@ const EmailManager = (props: { client: ICloudClient; reloadKey: number }) => {
                 )}
                 <div className="grid grid-cols-2 gap-2 pt-2">
                   <button className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-blue-50 hover:text-blue-600" onClick={() => navigator.clipboard.writeText(selected.hme)}><FontAwesomeIcon icon={faClipboard} className="mr-2" />复制</button>
-                  <button className="rounded-2xl bg-blue-500 px-4 py-3 text-sm font-black text-white transition hover:bg-blue-600 disabled:opacity-50" disabled={actingId === selected.anonymousId} onClick={() => toggleActive(selected)}><FontAwesomeIcon icon={selected.isActive ? faBan : faRefresh} className="mr-2" />{selected.isActive ? '停用' : '启用'}</button>
+                  <button className="rounded-2xl bg-blue-500 px-4 py-3 text-sm font-black text-white transition hover:bg-blue-600 disabled:opacity-50" disabled={actingId === selected.anonymousId || Boolean(batchProgress)} onClick={() => toggleActive(selected)}><FontAwesomeIcon icon={selected.isActive ? faBan : faRefresh} className="mr-2" />{selected.isActive ? '停用' : '启用'}</button>
                   {!selected.isActive && (
-                    <button className="col-span-2 rounded-2xl bg-rose-500 px-4 py-3 text-sm font-black text-white transition hover:bg-rose-600 disabled:opacity-50" disabled={actingId === selected.anonymousId} onClick={() => deleteEmail(selected)}><FontAwesomeIcon icon={faTrashAlt} className="mr-2" />删除邮箱</button>
+                    <button className="col-span-2 rounded-2xl bg-rose-500 px-4 py-3 text-sm font-black text-white transition hover:bg-rose-600 disabled:opacity-50" disabled={actingId === selected.anonymousId || Boolean(batchProgress)} onClick={() => deleteEmail(selected)}><FontAwesomeIcon icon={faTrashAlt} className="mr-2" />删除邮箱</button>
                   )}
                 </div>
               </div>
